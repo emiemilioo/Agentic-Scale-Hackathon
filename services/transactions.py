@@ -70,6 +70,14 @@ def list_expenses() -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def delete_expense(transaction_id: int) -> bool:
+    with connect() as connection:
+        cursor = connection.execute(
+            "DELETE FROM transactions WHERE id = ?", (transaction_id,)
+        )
+        return cursor.rowcount > 0
+
+
 def total_expenses() -> float:
     with connect() as connection:
         row = connection.execute("SELECT COALESCE(SUM(amount), 0) AS total FROM transactions").fetchone()

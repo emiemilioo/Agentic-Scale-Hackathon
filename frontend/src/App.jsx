@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Bot, Check, CircleDollarSign, Gauge, LayoutDashboard, LoaderCircle, MessageCircle, Pencil, Send, ShieldCheck, Sparkles, TicketCheck, WalletCards, X } from "lucide-react";
+import { AlertTriangle, Bot, Check, CircleDollarSign, Gauge, LayoutDashboard, LoaderCircle, MessageCircle, Pencil, Send, ShieldCheck, Sparkles, TicketCheck, Trash2, WalletCards, X } from "lucide-react";
 import { api } from "./api";
 
 const example = "Gasté 25 dólares en comida ayer en Mi Comisariato";
@@ -89,6 +89,17 @@ function App() {
       setSummary(updated);
       setEditingIncome(false);
       setStatus("Ingreso mensual actualizado.");
+    } catch (error) { setStatus(error.message); }
+    finally { setLoading(false); }
+  };
+
+  const removeTransaction = async (transaction) => {
+    if (!window.confirm(`¿Eliminar el gasto de $${transaction.amount.toFixed(2)} en ${transaction.merchant}?`)) return;
+    setLoading(true);
+    try {
+      const result = await api.deleteTransaction(transaction.id);
+      setStatus(result.message);
+      await refresh();
     } catch (error) { setStatus(error.message); }
     finally { setLoading(false); }
   };
@@ -291,7 +302,7 @@ function App() {
 
           <div className="activity-panel">
             <div className="activity-heading"><h2>Actividad reciente</h2><span>{summary.transaction_count} movimientos</span></div>
-            {transactions.length === 0 ? <div className="empty"><WalletCards size={30}/><b>Aún no hay gastos</b><span>Confirma tu primer movimiento desde el chat.</span></div> : transactions.slice(0, 6).map((item) => <div className="transaction" key={item.id}><div className="merchant-avatar">{item.merchant[0]}</div><div><b>{item.merchant}</b><span>{item.category} · {item.transaction_date}</span></div><strong>-${item.amount.toFixed(2)}</strong></div>)}
+            {transactions.length === 0 ? <div className="empty"><WalletCards size={30}/><b>Aún no hay gastos</b><span>Confirma tu primer movimiento desde el chat.</span></div> : transactions.slice(0, 6).map((item) => <div className="transaction" key={item.id}><div className="merchant-avatar">{item.merchant[0]}</div><div><b>{item.merchant}</b><span>{item.category} · {item.transaction_date}</span></div><strong>-${item.amount.toFixed(2)}</strong><button className="delete-transaction" onClick={() => removeTransaction(item)} disabled={loading} aria-label={`Eliminar gasto en ${item.merchant}`} title="Eliminar movimiento"><Trash2 size={14}/></button></div>)}
           </div>
         </section>}
 

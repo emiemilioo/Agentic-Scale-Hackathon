@@ -21,6 +21,9 @@ export const api = {
     body: JSON.stringify({ amount }),
   }),
   transactions: () => request("/api/transactions"),
+  deleteTransaction: (transactionId) => request(`/api/transactions/${transactionId}`, {
+    method: "DELETE",
+  }),
   budgets: () => request("/api/budgets"),
   tickets: () => request("/api/tickets"),
   interpret: (message) => request("/api/agent/interpret", {

@@ -22,6 +22,7 @@ from services.transactions import (
     initialize_database,
     list_expenses,
     register_expense,
+    delete_expense,
     total_expenses,
     get_monthly_income,
     set_monthly_income,
@@ -96,6 +97,13 @@ def confirm_expense(payload: ConfirmExpenseRequest) -> ConfirmExpenseResponse:
 @app.get("/api/transactions")
 def transactions() -> list[dict]:
     return list_expenses()
+
+
+@app.delete("/api/transactions/{transaction_id}")
+def remove_transaction(transaction_id: int) -> dict:
+    if not delete_expense(transaction_id):
+        raise HTTPException(status_code=404, detail="Movimiento no encontrado.")
+    return {"message": "Movimiento eliminado correctamente."}
 
 
 @app.get("/api/summary", response_model=SummaryResponse)
