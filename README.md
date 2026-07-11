@@ -92,3 +92,21 @@ Gemini interpreta lenguaje natural, pero no escribe en la base de datos. React s
 - Abstención cuando la base aprobada no contiene una respuesta.
 
 Las pruebas no consumen la API de Gemini y no requieren una clave.
+
+## Variables para despliegue
+
+Backend:
+
+```text
+GEMINI_API_KEY=secreto configurado en el proveedor
+GEMINI_MODEL=gemini-3.5-flash
+CORS_ORIGINS=https://tu-frontend.vercel.app
+```
+
+Frontend:
+
+```text
+VITE_API_URL=https://tu-backend.onrender.com
+```
+
+SQLite se utiliza únicamente para la demostración. En producción se migraría a PostgreSQL.
