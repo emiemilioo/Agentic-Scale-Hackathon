@@ -215,7 +215,7 @@ function App() {
       </aside>
 
       <main>
-        <header><div><p className="eyebrow">BUEN DÍA, ANA</p><h1>Tu dinero, más claro.</h1><p>Registra un gasto como se lo contarías a una persona.</p></div><span className="mode"><span></span>{mode}</span></header>
+        <header><div><p className="eyebrow">TU RESUMEN FINANCIERO</p><h1>Tu dinero, más claro.</h1><p>Registra un gasto como se lo contarías a una persona.</p></div><span className="mode"><span></span>{mode}</span></header>
 
         <section className="metrics">
           <MoneyCard label="Ingresos" value={`$${summary.income.toFixed(2)}`} icon={CircleDollarSign} tone="teal" />
@@ -227,7 +227,7 @@ function App() {
           <div className="chat-panel">
             <div className="panel-heading"><div><span className="bot-icon"><Bot size={20}/></span><div><h2>Agente financiero</h2><p>Entiendo lenguaje cotidiano y pregunto antes de actuar.</p></div></div></div>
             <div className="conversation">
-              <div className="bubble agent">Hola, Ana. ¿Qué movimiento quieres registrar hoy?</div>
+              <div className="bubble agent">Hola. ¿Qué movimiento quieres registrar hoy?</div>
               {message && draft && <div className="bubble user">{message}</div>}
               {draft && <div className="draft-card">
                 <div className="draft-title"><Sparkles size={17}/><b>Esto entendí</b><span>Borrador</span></div>
