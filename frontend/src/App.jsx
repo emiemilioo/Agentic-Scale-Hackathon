@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Bot, Check, CircleDollarSign, Gauge, Send, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react";
+import { AlertTriangle, Bot, Check, CircleDollarSign, Gauge, LayoutDashboard, MessageCircle, Send, ShieldCheck, Sparkles, TicketCheck, WalletCards, X } from "lucide-react";
 import { api } from "./api";
 
 const example = "Gasté 25 dólares en comida ayer en Mi Comisariato";
@@ -15,6 +15,7 @@ function MoneyCard({ label, value, icon: Icon, tone = "navy" }) {
 }
 
 function App() {
+  const [activeView, setActiveView] = useState("home");
   const [message, setMessage] = useState("");
   const [draft, setDraft] = useState(null);
   const [errors, setErrors] = useState([]);
@@ -28,17 +29,25 @@ function App() {
   const [supportResult, setSupportResult] = useState(null);
   const [ticketResult, setTicketResult] = useState(null);
   const [merchantCorrection, setMerchantCorrection] = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [waMessage, setWaMessage] = useState("");
+  const [waDraft, setWaDraft] = useState(null);
+  const [waMessages, setWaMessages] = useState([
+    { role: "agent", text: "Hola, soy Saldo Claro. Cuéntame un gasto y lo revisaré antes de registrarlo." },
+  ]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
   const refresh = async () => {
-    const [summaryData, transactionData, health, budgetData] = await Promise.all([
-      api.summary(), api.transactions(), api.health(), api.budgets(),
+    const [summaryData, transactionData, health, budgetData, ticketData] = await Promise.all([
+      api.summary(), api.transactions(), api.health(), api.budgets(), api.tickets(),
     ]);
     setSummary(summaryData);
     setTransactions(transactionData);
     setMode(health.agent_mode);
     setBudgets(budgetData);
+    setTickets(ticketData);
   };
 
   useEffect(() => { refresh().catch(() => setMode("Backend desconectado")); }, []);
@@ -116,14 +125,57 @@ function App() {
         priority: supportResult.priority,
       });
       setTicketResult(ticket);
+      await refresh();
     } catch (error) { setStatus(error.message); }
+  };
+
+  const askWhatsApp = async (event) => {
+    event.preventDefault();
+    const text = waMessage.trim();
+    if (!text) return;
+    setWaMessages((current) => [...current, { role: "user", text }]);
+    setWaMessage("");
+    try {
+      const result = await api.interpret(text);
+      setWaDraft(result.draft);
+      if (result.validation_errors.length > 0) {
+        setWaMessages((current) => [...current, {
+          role: "agent",
+          text: result.draft.clarification_question || result.validation_errors[0],
+        }]);
+      } else {
+        setWaMessages((current) => [...current, {
+          role: "agent",
+          text: `Entendí: $${result.draft.amount.toFixed(2)}, ${result.draft.category}, ${result.draft.merchant}, ${result.draft.date}. ¿Lo registro?`,
+        }]);
+      }
+    } catch (error) {
+      setWaMessages((current) => [...current, { role: "agent", text: error.message }]);
+    }
+  };
+
+  const confirmWhatsApp = async () => {
+    try {
+      await api.confirm(waDraft);
+      setWaMessages((current) => [...current, { role: "agent", text: "Registrado. Tu dashboard ya fue actualizado." }]);
+      setWaDraft(null);
+      await refresh();
+    } catch (error) {
+      setWaMessages((current) => [...current, { role: "agent", text: error.message }]);
+    }
   };
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand"><div className="brand-mark">S</div><div><b>Saldo Claro</b><span>Finanzas que hablan contigo</span></div></div>
-        <nav><button className="active"><Sparkles size={18}/> Mi espacio</button><button><WalletCards size={18}/> Presupuestos</button><button><ShieldCheck size={18}/> Soporte</button></nav>
+        <nav>
+          <button className={activeView === "home" ? "active" : ""} onClick={() => setActiveView("home")}><LayoutDashboard size={18}/> Mi espacio</button>
+          <button className={activeView === "budgets" ? "active" : ""} onClick={() => setActiveView("budgets")}><WalletCards size={18}/> Presupuestos</button>
+          <button className={activeView === "whatsapp" ? "active" : ""} onClick={() => setActiveView("whatsapp")}><MessageCircle size={18}/> WhatsApp demo</button>
+          <button className={activeView === "support" ? "active" : ""} onClick={() => setActiveView("support")}><ShieldCheck size={18}/> Soporte</button>
+          <button className={activeView === "tickets" ? "active" : ""} onClick={() => setActiveView("tickets")}><TicketCheck size={18}/> Tickets <span className="nav-count">{tickets.length}</span></button>
+        </nav>
         <div className="security-note"><ShieldCheck size={21}/><div><b>Acciones verificadas</b><span>La IA nunca guarda sin tu confirmación.</span></div></div>
       </aside>
 
@@ -136,7 +188,7 @@ function App() {
           <MoneyCard label="Saldo disponible" value={`$${summary.balance.toFixed(2)}`} icon={ShieldCheck} />
         </section>
 
-        <section className="workspace">
+        {activeView === "home" && <section className="workspace">
           <div className="chat-panel">
             <div className="panel-heading"><div><span className="bot-icon"><Bot size={20}/></span><div><h2>Agente financiero</h2><p>Entiendo lenguaje cotidiano y pregunto antes de actuar.</p></div></div></div>
             <div className="conversation">
@@ -180,9 +232,9 @@ function App() {
             <div className="activity-heading"><h2>Actividad reciente</h2><span>{summary.transaction_count} movimientos</span></div>
             {transactions.length === 0 ? <div className="empty"><WalletCards size={30}/><b>Aún no hay gastos</b><span>Confirma tu primer movimiento desde el chat.</span></div> : transactions.slice(0, 6).map((item) => <div className="transaction" key={item.id}><div className="merchant-avatar">{item.merchant[0]}</div><div><b>{item.merchant}</b><span>{item.category} · {item.transaction_date}</span></div><strong>-${item.amount.toFixed(2)}</strong></div>)}
           </div>
-        </section>
+        </section>}
 
-        <section className="budget-section">
+        {activeView === "budgets" && <section className="budget-section standalone">
           <div className="section-title"><div><p className="eyebrow">CONTROL MENSUAL</p><h2>Presupuestos y alertas</h2></div><button onClick={() => setShowBudgetForm(!showBudgetForm)}>+ Crear presupuesto</button></div>
           {showBudgetForm && <form className="budget-form" onSubmit={saveBudget}>
             <label>Categoría<select value={budgetForm.category} onChange={(e) => setBudgetForm({...budgetForm, category: e.target.value})}>{categories.map((c) => <option key={c}>{c}</option>)}</select></label>
@@ -197,9 +249,9 @@ function App() {
             {budget.status === "warning" && <p className="budget-alert">Has usado ${budget.spent.toFixed(2)} de ${budget.amount_limit.toFixed(2)}. Superaste tu umbral de ${budget.threshold_amount.toFixed(2)}.</p>}
             {budget.status === "exceeded" && <p className="budget-alert">Excediste este presupuesto por ${(budget.spent - budget.amount_limit).toFixed(2)}.</p>}
           </article>)}</div>}
-        </section>
+        </section>}
 
-        <section className="support-section">
+        {activeView === "support" && <section className="support-section standalone">
           <div className="section-title"><div><p className="eyebrow">SOPORTE RESPONSABLE</p><h2>Centro de soporte</h2></div><span className="approved-badge"><ShieldCheck size={15}/>Base aprobada</span></div>
           <div className="support-layout">
             <form className="support-form" onSubmit={askSupport}>
@@ -218,7 +270,35 @@ function App() {
               </>}
             </div>
           </div>
-        </section>
+        </section>}
+
+        {activeView === "whatsapp" && <section className="whatsapp-section">
+          <div className="channel-heading"><div><span className="whatsapp-logo"><MessageCircle size={22}/></span><div><p className="eyebrow">CANAL MASIVO SIMULADO</p><h2>WhatsApp Demo</h2></div></div><span className="simulation-badge">Simulación para hackathon</span></div>
+          <div className="phone-shell">
+            <div className="phone-header"><div className="wa-avatar">S</div><div><b>Saldo Claro</b><span>Agente financiero · en línea</span></div></div>
+            <div className="wa-chat">
+              {waMessages.map((item, index) => <div key={`${item.role}-${index}`} className={`wa-bubble ${item.role}`}>{item.text}<small>{new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}</small></div>)}
+              {waDraft && !waDraft.requires_clarification && <div className="wa-confirm">
+                <b>Movimiento pendiente</b><span>Gemini estructuró los datos; todavía no se ha guardado.</span>
+                <div><button onClick={confirmWhatsApp}><Check size={16}/> Confirmar</button><button onClick={() => setWaDraft(null)}><X size={16}/> Cancelar</button></div>
+              </div>}
+            </div>
+            <form className="wa-composer" onSubmit={askWhatsApp}><input value={waMessage} onChange={(e) => setWaMessage(e.target.value)} placeholder="Escribe un mensaje"/><button><Send size={18}/></button></form>
+          </div>
+          <p className="simulation-note"><ShieldCheck size={16}/>Este canal simula la experiencia de WhatsApp. No utiliza un número real ni envía datos a Meta.</p>
+        </section>}
+
+        {activeView === "tickets" && <section className="tickets-section">
+          <div className="section-title"><div><p className="eyebrow">ESCALAMIENTO HUMANO</p><h2>Bandeja de tickets</h2></div><span className="approved-badge"><TicketCheck size={15}/>{tickets.length} casos</span></div>
+          {tickets.length === 0 ? <div className="ticket-empty"><TicketCheck size={28}/><b>No hay tickets todavía</b><span>Crea un caso sensible desde Soporte para probar el escalamiento.</span><button onClick={() => setActiveView("support")}>Ir a soporte</button></div> : <div className="tickets-layout">
+            <div className="ticket-list">{tickets.map((ticket) => <button key={ticket.id} className={selectedTicket?.id === ticket.id ? "selected" : ""} onClick={() => setSelectedTicket(ticket)}><div><b>Ticket #{ticket.id}</b><span>{ticket.summary}</span></div><div><em className={`priority ${ticket.priority.toLowerCase()}`}>{ticket.priority}</em><small>{ticket.status}</small></div></button>)}</div>
+            <div className="ticket-detail">{selectedTicket ? <>
+              <div className="ticket-detail-head"><div><small>CASO #{selectedTicket.id}</small><h3>{selectedTicket.summary}</h3></div><em className={`priority ${selectedTicket.priority.toLowerCase()}`}>{selectedTicket.priority}</em></div>
+              <dl><div><dt>Tipo</dt><dd>{selectedTicket.case_type}</dd></div><div><dt>Estado</dt><dd>{selectedTicket.status}</dd></div><div><dt>Creado</dt><dd>{selectedTicket.created_at}</dd></div></dl>
+              <h4>Historial entregado al equipo humano</h4><pre>{selectedTicket.history}</pre>
+            </> : <div className="select-ticket"><TicketCheck size={28}/><span>Selecciona un ticket para revisar su contexto e historial.</span></div>}</div>
+          </div>}
+        </section>}
       </main>
     </div>
   );

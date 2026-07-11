@@ -18,6 +18,7 @@ export const api = {
   summary: () => request("/api/summary"),
   transactions: () => request("/api/transactions"),
   budgets: () => request("/api/budgets"),
+  tickets: () => request("/api/tickets"),
   interpret: (message) => request("/api/agent/interpret", {
     method: "POST",
     body: JSON.stringify({ message }),
