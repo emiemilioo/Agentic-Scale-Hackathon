@@ -1,0 +1,20 @@
+[
+  {
+    "id": "KB-001",
+    "title": "Actualización de datos personales",
+    "content": "Para actualizar datos personales, el cliente debe presentar un documento de identidad vigente y completar la solicitud de actualización. Si el cambio afecta información regulatoria, un asesor debe revisar el caso.",
+    "version": "1.0"
+  },
+  {
+    "id": "KB-002",
+    "title": "Operaciones no reconocidas",
+    "content": "Una operación no reconocida debe reportarse inmediatamente al equipo de soporte. El asistente no bloquea cuentas ni revierte transacciones; crea un ticket prioritario para revisión humana.",
+    "version": "1.0"
+  },
+  {
+    "id": "KB-003",
+    "title": "Estados de cuenta",
+    "content": "Los estados de cuenta de prueba pueden consultarse desde el portal. Si falta un documento o existen diferencias, se debe crear un caso para revisión.",
+    "version": "1.0"
+  }
+]
