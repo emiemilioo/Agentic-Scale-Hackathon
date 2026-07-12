@@ -240,4 +240,4 @@ Los cambios fusionados y subidos a `main` activan despliegues automáticos.
 
 ## Equipo
 
-Equipo Saldo Claro · Agentic Scale 2026.
+Equipo CodDivas · Agentic Scale 2026.
